@@ -182,8 +182,43 @@ forAll(mdotCells, celli)
     scalar Tr = 0.0;
     if (Tc > Tsat)  // Evaporation
     {
-        Tr = (Tc - Tsat) / Tsat;
+        /**
+         * 20220411
+         * Superheat Lee model
+         */
+        if (Tc >= Tsat + deltaSuperheat)
+        {
+            Tr = (Tc - Tsat) / Tsat;
+            mdotCells[celli] = -Ce*alpha1[celli] * rho1[celli]*Tr;
+            Sp[celli] -= Ce * Tr * (alpha2[celli] + rho1[celli]/rho2[celli] * alpha1[celli]);
 
+            qvdotCells[celli] = -Ce*alpha1[celli]*rho1[celli]*hl*Tr;
+            TEqnSp[celli] = -Ce*alpha1[celli]*rho1[celli]*hl/(Tsat*cpc);
+            TEqnSu[celli] = Ce*alpha1[celli]*rho1[celli]*hl/(cpc);
+        }
+        else if (alpha1 < 1)
+        {
+            Tr = (Tc - Tsat) / Tsat;
+            mdotCells[celli] = -Ce*alpha1[celli] * rho1[celli]*Tr;
+            Sp[celli] -= Ce * Tr * (alpha2[celli] + rho1[celli]/rho2[celli] * alpha1[celli]);
+
+            qvdotCells[celli] = -Ce*alpha1[celli]*rho1[celli]*hl*Tr;
+            TEqnSp[celli] = -Ce*alpha1[celli]*rho1[celli]*hl/(Tsat*cpc);
+            TEqnSu[celli] = Ce*alpha1[celli]*rho1[celli]*hl/(cpc);
+        }
+        else
+        {
+            mdotCells[celli] = 0.0;
+            qvdotCells[celli] = 0.0;
+            TEqnSp[celli] = 0.0;
+            TEqnSu[celli] = 0.0;
+        }
+
+        /**
+         * Original
+         */
+        /*
+        Tr = (Tc - Tsat) / Tsat;
         // // 20220307
         // mdotCells[celli] = -Ce*alpha1[celli] * alpha2[celli] *rho1[celli]*Tr;
         // Sp[celli] -= Ce * Tr * (alpha2[celli] + rho1[celli]/rho2[celli] * alpha1[celli]) * alpha2[celli];
@@ -200,6 +235,7 @@ forAll(mdotCells, celli)
         qvdotCells[celli] = -Ce*alpha1[celli]*rho1[celli]*hl*Tr;
         TEqnSp[celli] = -Ce*alpha1[celli]*rho1[celli]*hl/(Tsat*cpc);
         TEqnSu[celli] = Ce*alpha1[celli]*rho1[celli]*hl/(cpc);
+        */
     }
     else if (Tc < Tsat)  // Condensation
     {

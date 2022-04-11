@@ -74,6 +74,7 @@ const scalar Ce(mixture.lookupOrDefault("Ce", 0.0));
 const scalar condThresh(mixture.lookupOrDefault("condThresh", 0.9));
 const scalar evapThresh(mixture.lookupOrDefault("evapThresh", 0.1));
 const scalar relexFac(mixture.lookupOrDefault("relaxFac", 1.0));
+const scalar deltaSuperheat(mixture.lookupOrDefault("deltaSuperheat", 0.0));
 Foam::Info<< "Coefficient of condensation/evaporation: " << Cc << " " << Ce << endl;
 
 volScalarField hlField
