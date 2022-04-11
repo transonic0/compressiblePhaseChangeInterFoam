@@ -53,6 +53,9 @@ Description
 #include "CorrectPhi.H"
 #include "fvcSmooth.H"
 
+// #include "wallFvPatch.H"
+// #include "MeshGraph.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])
@@ -68,6 +71,8 @@ int main(int argc, char *argv[])
     #include "CourantNo.H"
     #include "setInitialDeltaT.H"
     #include "createUfIfPresent.H"
+
+    // MeshGraph interfaceMeshGraph(mesh, alpha1);
 
     volScalarField& p = mixture.p();
     volScalarField& T = mixture.T();

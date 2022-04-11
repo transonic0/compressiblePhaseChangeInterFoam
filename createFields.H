@@ -71,7 +71,69 @@ volScalarField rho
 // Phase change parameters
 const scalar Cc(mixture.lookupOrDefault("Cc", 0.0));
 const scalar Ce(mixture.lookupOrDefault("Ce", 0.0));
+const scalar condThresh(mixture.lookupOrDefault("condThresh", 0.9));
+const scalar evapThresh(mixture.lookupOrDefault("evapThresh", 0.1));
+const scalar relexFac(mixture.lookupOrDefault("relaxFac", 1.0));
 Foam::Info<< "Coefficient of condensation/evaporation: " << Cc << " " << Ce << endl;
+
+volScalarField hlField
+(
+    IOobject
+    (
+        "hlField",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("hlValue", dimEnergy/dimMass, 0.0)
+);
+
+volScalarField TsatField
+(
+    IOobject
+    (
+        "TsatField",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("TsatValue", dimTemperature, 0.0)
+);
+
+
+/*
+volScalarField interfaceField
+(
+    IOobject
+    (
+        "interfaceField",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("interfaceValue", dimless, 0.0)
+);
+
+volScalarField wallField
+(
+    IOobject
+    (
+        "wallField",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("wallValue", dimless, 0.0)
+);
+*/
 
 // mdot [kg/m3 s] mass transfer from phase2 to phase1
 volScalarField mdot

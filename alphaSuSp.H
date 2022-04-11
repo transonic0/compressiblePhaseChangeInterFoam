@@ -37,11 +37,132 @@ const volScalarField mixtureCp =
     alpha1 * mixture.thermo1().Cp()() + alpha2 * mixture.thermo2().Cp()();
 const volScalarField::Internal& mixtureCpCells = mixtureCp.internalField();
 
+// calculate Tsat and hl
+scalarField& TsatFieldCells = TsatField.primitiveFieldRef();
+scalarField& hlFieldCells = hlField.primitiveFieldRef();
+forAll(tmpPCells, celli)
+{
+    TsatFieldCells[celli] = mixture.Tsat( tmpPCells[celli] );
+    hlFieldCells[celli] = mixture.hl( tmpPCells[celli], tmpTCells[celli] );
+}
+forAll(p.boundaryField(), patchI)
+{
+    const fvPatchScalarField& pp = p.boundaryField()[patchI];
+    const fvPatchScalarField& pT = T.boundaryField()[patchI];
+    fvPatchScalarField& pTsat = TsatField.boundaryFieldRef()[patchI];
+    fvPatchScalarField& phl = hlField.boundaryFieldRef()[patchI];
+    forAll(pp, facei)
+    {
+        pTsat[facei] = mixture.Tsat( pp[facei] );
+        phl[facei] = mixture.hl( pp[facei], pT[facei] );
+    }
+}
+
+const volScalarField heField = mixture.he(p, T);
+// const volScalarField heSatField = mixture.he(p, TsatField);
+
 // for (label i = 0; i < 1001; ++i)
 // {
 //     const scalar p0 = 1.0 + 2e07/1000*i;
 //     Foam::Info<< p0 << "," << mixture.Tsat(p0) << endl;
 // }
+
+
+/**
+ * 20220323 new interface equilibrium phase change model
+ *
+ */
+
+/*
+std::vector<MeshGraph::CellFacePair> condIntCellFacePairs;
+std::vector<MeshGraph::CellFacePair> evapIntCellFacePairs;
+
+interfaceMeshGraph.Reset();
+interfaceMeshGraph.GetInterfaceCellFacePairs(condIntCellFacePairs, condThresh);
+interfaceMeshGraph.Reset();
+interfaceMeshGraph.GetInterfaceCellFacePairs(evapIntCellFacePairs, evapThresh);
+
+surfaceScalarField Tface = fvc::interpolate(T);
+surfaceScalarField pface = fvc::interpolate(p);
+surfaceScalarField TsatFace = fvc::interpolate(TsatField);
+interfaceField = 0.0;
+
+for
+(
+    std::vector<MeshGraph::CellFacePair>::iterator it = condIntCellFacePairs.begin();
+    it != condIntCellFacePairs.end();
+    it++
+)
+{
+    if (Tface[(*it).f] <= TsatFace[(*it).f])
+    {
+        interfaceField[ (*it).c1 ] = 1;
+        interfaceField[ (*it).c2 ] = 1;
+    }
+}
+
+for
+(
+    std::vector<MeshGraph::CellFacePair>::iterator it = evapIntCellFacePairs.begin();
+    it != evapIntCellFacePairs.end();
+    it++
+)
+{
+    if (Tface[(*it).f] >= TsatFace[(*it).f])
+    {
+        interfaceField[ (*it).c1 ] = 1;
+        interfaceField[ (*it).c2 ] = 1;
+    }
+}
+
+labelList wallCells;
+forAll (mesh.boundary(), pI)
+{
+    if ( isA<wallFvPatch>(mesh.boundary()[pI]) )
+        wallCells.append( mesh.boundary()[pI].faceCells() );
+}
+wallField = 0.0;
+forAll ( wallCells, cI )
+{
+    wallField[ wallCells[cI] ] = 1;
+    interfaceField[ wallCells[cI] ] = 1;
+}
+
+mdot = dimensionedScalar( "dummy", dimMass/dimVolume/dimTime, 0.0 );
+qvdot = dimensionedScalar( "dummy", dimEnergy/dimVolume/dimTime, 0.0 );
+TEqnSp = dimensionedScalar("dummy", dimMass/dimVolume/dimTime, 0.0 );
+TEqnSu = dimensionedScalar( "dummy", dimMass*dimTemperature/dimVolume/dimTime, 0.0);
+
+const dimensionedScalar dT = runTime.deltaT();
+
+qvdot = interfaceField * rho * mixtureCp * (T - TsatField) / dT;
+Foam::Info<< "* Unlimited * qvdot min/max: " << min(qvdot).value() << " " << max(qvdot).value() << endl;
+qvdot = interfaceField * rho * (heField - heSatField) / dT;
+Foam::Info<< "**Unlimited** qvdot min/max: " << min(qvdot).value() << " " << max(qvdot).value() << endl;
+volScalarField limEvap = (1.0 - wallField) * alpha1 * rho1 * hlField / dT;
+volScalarField limCond = (1.0 - alpha1) * rho2 * hlField / dT;
+volScalarField qvdot_fluid = neg(qvdot) * max(qvdot, -limCond) + pos(qvdot) * min(qvdot, limEvap);
+volScalarField PCV_fac = dT * (qvdot / hlField) * (scalar(1.0)/rho2 - scalar(1.0)/rho1);
+volScalarField qvdot_vol = qvdot * mag( min( max( 1.0/(PCV_fac+SMALL), -1.0 ), (1.0-wallField) ) );
+qvdot = pos(qvdot) * min( min(qvdot, qvdot_fluid), qvdot_vol ) + neg(qvdot) * max( max( qvdot, qvdot_fluid ), qvdot_vol );
+qvdot = -relexFac * qvdot;
+mdot = qvdot / hlField;
+
+forAll(mdotCells, celli)
+{
+    Su[celli] = (alpha1[celli]/rho2[celli] + alpha2[celli]/rho1[celli]) * mdot[celli];
+
+    TEqnSu[celli] = qvdot[celli] / mixtureCpCells[celli];
+}
+Foam::Info<< "qvdot min/max: " << min(qvdot).value() << " " << max(qvdot).value() << endl;
+Foam::Info<< "mdot min/max: " << min(mdot).value() << " " << max(mdot).value() << endl;
+*/
+
+
+/**
+ * Original Lee phase change model
+ *
+ */
 
 forAll(mdotCells, celli)
 {
@@ -62,7 +183,18 @@ forAll(mdotCells, celli)
     if (Tc > Tsat)  // Evaporation
     {
         Tr = (Tc - Tsat) / Tsat;
-        mdotCells[celli] = -Ce*alpha1[celli]*rho1[celli]*Tr;
+
+        // // 20220307
+        // mdotCells[celli] = -Ce*alpha1[celli] * alpha2[celli] *rho1[celli]*Tr;
+        // Sp[celli] -= Ce * Tr * (alpha2[celli] + rho1[celli]/rho2[celli] * alpha1[celli]) * alpha2[celli];
+
+        // qvdotCells[celli] = -Ce*alpha1[celli]* alpha2[celli] *rho1[celli]*hl*Tr;
+        // TEqnSp[celli] = -Ce*alpha1[celli]* alpha2[celli] *rho1[celli]*hl/(Tsat*cpc);
+        // TEqnSu[celli] = Ce*alpha1[celli]* alpha2[celli] *rho1[celli]*hl/(cpc);
+
+
+        //original
+        mdotCells[celli] = -Ce*alpha1[celli] * rho1[celli]*Tr;
         Sp[celli] -= Ce * Tr * (alpha2[celli] + rho1[celli]/rho2[celli] * alpha1[celli]);
 
         qvdotCells[celli] = -Ce*alpha1[celli]*rho1[celli]*hl*Tr;
@@ -72,6 +204,17 @@ forAll(mdotCells, celli)
     else if (Tc < Tsat)  // Condensation
     {
         Tr = (Tsat - Tc) / Tsat;
+
+        // //20220307
+        // mdotCells[celli] = Cc*alpha1[celli]*alpha2[celli]*rho2[celli]*Tr;
+        // Sp[celli] -= Cc * Tr * alpha1[celli]* (alpha1[celli] + rho2[celli]/rho1[celli] * alpha2[celli]);
+        // Su[celli] += Cc * Tr * alpha1[celli]* (alpha1[celli] + rho2[celli]/rho1[celli] * alpha2[celli]);
+
+        // qvdotCells[celli] = Cc*alpha1[celli]*alpha2[celli]*rho2[celli]*hl*Tr;
+        // TEqnSp[celli] = -Cc*alpha1[celli]*alpha2[celli]*rho2[celli]*hl/(Tsat*cpc);
+        // TEqnSu[celli] = Cc*alpha1[celli]*alpha2[celli]*rho2[celli]*hl/(cpc);
+
+
         mdotCells[celli] = Cc*alpha2[celli]*rho2[celli]*Tr;
         Sp[celli] -= Cc * Tr * (alpha1[celli] + rho2[celli]/rho1[celli] * alpha2[celli]);
         Su[celli] += Cc * Tr * (alpha1[celli] + rho2[celli]/rho1[celli] * alpha2[celli]);
@@ -91,6 +234,10 @@ forAll(mdotCells, celli)
 
 Foam::Info<< "mdot min/max: " << min(mdot).value() << " " << max(mdot).value() << endl;
 Foam::Info<< "qvdot min/max: " << min(qvdot).value() << " " << max(qvdot).value() << endl;
+
+/**
+ * End original Lee model
+ */
 
 forAll(dgdt, celli)
 {

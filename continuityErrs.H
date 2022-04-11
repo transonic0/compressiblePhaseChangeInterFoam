@@ -34,6 +34,11 @@ Description
 
     dimensionedScalar totalMass = fvc::domainIntegrate(rhoRef);
     Foam::Info<< "System total mass (kg):  " << totalMass.value() << endl;
+    static scalar mass0 = totalMass.value();
+    Foam::Info<< "System total mass deviation (%):  " << (totalMass.value() - mass0)/mass0 << endl;
+
+    dimensionedScalar totalPhaseChange = fvc::domainIntegrate(mdot);
+    Foam::Info<< "System total phase change rate (kg/s):  " << totalPhaseChange.value() << endl;
 
     // rho = alpha1*rho1 + alpha2*rho2;
 
